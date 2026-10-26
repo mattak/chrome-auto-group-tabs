@@ -154,9 +154,20 @@ async function sweepAllTabs() {
   return results;
 }
 
+// Navigation events are handled one at a time. Two tabs for the same group
+// arriving together would otherwise both see "no group yet" and create two.
+let queue = Promise.resolve();
+function enqueue(tab) {
+  const run = queue.then(() => handleTab(tab)).catch((e) => {
+    console.warn('handleTab failed', e);
+  });
+  queue = run;
+  return run;
+}
+
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (!changeInfo.url) return;
-  handleTab(tab);
+  enqueue(tab);
 });
 
 chrome.runtime.onInstalled.addListener(() => {
