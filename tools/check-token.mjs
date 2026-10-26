@@ -5,8 +5,8 @@
 //
 // Exit code 0 when every lookup succeeds, 1 otherwise.
 
-import { fetchLogin, fetchPullRequest } from '../github.js';
-import { classifyPr, parsePrUrl } from '../lib.js';
+import { fetchIssue, fetchLogin } from '../github.js';
+import { classifyPr, parseGitHubUrl } from '../lib.js';
 
 function parseArgs(argv) {
   let token = process.env.GITHUB_TOKEN || '';
@@ -44,17 +44,17 @@ async function main() {
   let failed = false;
   for (const t of targets) {
     const url = toUrl(t);
-    const pr = parsePrUrl(url);
-    if (!pr) {
-      console.log(`[ng] ${url} -> not a PR url (expected https://github.com/<owner>/<repo>/pull/<n>)`);
+    const target = parseGitHubUrl(url);
+    if (!target) {
+      console.log(`[ng] ${url} -> not a PR/issue url (expected https://github.com/<owner>/<repo>/pull/<n> or /issues/<n>)`);
       failed = true;
       continue;
     }
     try {
-      const data = await fetchPullRequest(token, pr);
+      const data = await fetchIssue(token, target);
       const assignees = (data.assignees || []).map((a) => a.login);
       const kind = classifyPr(data, login);
-      console.log(`[ok] ${url} -> ${kind} (assignees: ${assignees.join(', ') || 'none'})`);
+      console.log(`[ok] ${url} -> ${target.kind} ${kind} (assignees: ${assignees.join(', ') || 'none'})`);
     } catch (e) {
       console.log(`[ng] ${url} -> ${e.message}`);
       if (e.status === 404) {

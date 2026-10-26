@@ -33,10 +33,13 @@ export async function fetchLogin(token) {
   return user.login;
 }
 
-/** Fetch a pull request. We only read `assignees[].login`. */
-export async function fetchPullRequest(token, { owner, repo, number }) {
+/**
+ * Fetch an issue or a pull request. The issues endpoint serves both and
+ * returns `assignees[]` for either, which is all we read.
+ */
+export async function fetchIssue(token, { owner, repo, number }) {
   return request(
     token,
-    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${number}`,
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues/${number}`,
   );
 }
