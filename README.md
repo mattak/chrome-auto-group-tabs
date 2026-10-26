@@ -18,8 +18,9 @@ other tabs alone, so it can run next to a general URL-rule grouper such as
    checks `assignees[].login` against your login (`GET /user`, cached).
 3. The tab is moved into the matching group in its own window. The group is
    created on first use.
-4. When a managed tab navigates away from a PR page it is ungrouped, so other
-   groupers can pick it up again.
+4. When a tab in `pr-mine` / `pr-others` navigates away from a PR page it is
+   ungrouped, so other groupers can pick it up again. Tabs in any other group
+   are never touched.
 
 One API call per PR navigation. Authenticated rate limit is 5,000 requests per
 hour, which is far above normal browsing.
@@ -36,6 +37,15 @@ hour, which is far above normal browsing.
      care about. Add **Metadata: Read-only** (GitHub adds it automatically).
 5. Click **Test token** to confirm the login it resolves to, then
    **Re-scan open tabs**.
+
+The token must belong to the account that actually gets assigned to PRs. If
+that is the account `gh` is logged in as, `gh auth token` prints a token with
+`repo` scope you can paste directly. A token from a different account produces
+no error; every PR simply ends up in `pr-others`.
+
+For fine-grained tokens on organisation repositories the organisation must be
+the resource owner and may have to approve the token. A classic `repo` token
+avoids that step.
 
 The token is stored in `chrome.storage.local` for this browser profile only and
 is sent to `https://api.github.com` and nowhere else.
@@ -70,7 +80,4 @@ The pure logic (URL parsing, assignee check, settings normalisation) lives in
 - Desktop Chrome only. The tab groups API is not available on Android.
 - Groups are per window. Opening a PR in another window creates a second
   `pr-mine` or `pr-others` group there.
-- The "navigated away, ungroup it" bookkeeping is kept in memory and resets when
-  the service worker is suspended. A tab that left a PR page while the worker
-  was asleep stays in its group until the next navigation.
 - Only `assignees` is consulted. Requested reviewers are treated as "others".

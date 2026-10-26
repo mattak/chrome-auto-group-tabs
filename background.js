@@ -1,11 +1,6 @@
 import { classifyPr, normalizeSettings, parsePrUrl } from './lib.js';
 import { fetchLogin, fetchPullRequest } from './github.js';
 
-// tabId -> kind ('mine' | 'others') of the group this extension last put the
-// tab into. Used to ungroup a tab when it navigates away from a PR page.
-// Lives only as long as the service worker; losing it is harmless.
-const managedTabs = new Map();
-
 async function loadSettings() {
   const { settings } = await chrome.storage.local.get('settings');
   return normalizeSettings(settings);
@@ -38,10 +33,19 @@ async function findOrCreateGroup(tab, { title, color }) {
   return groupId;
 }
 
-async function ungroupIfManaged(tab) {
-  if (!managedTabs.has(tab.id)) return;
-  managedTabs.delete(tab.id);
+// Ungroup a tab that left a PR page, but only if it currently sits in one of
+// our own groups. Tabs in groups owned by the user or other extensions are
+// never touched.
+async function ungroupIfOurs(tab, settings) {
   if (tab.groupId === chrome.tabGroups.TAB_GROUP_ID_NONE) return;
+  let group;
+  try {
+    group = await chrome.tabGroups.get(tab.groupId);
+  } catch {
+    return;
+  }
+  const ours = [settings.mine.title, settings.others.title];
+  if (!ours.includes(group.title)) return;
   try {
     await chrome.tabs.ungroup(tab.id);
   } catch (e) {
@@ -52,13 +56,14 @@ async function ungroupIfManaged(tab) {
 async function handleTab(tab) {
   if (!tab || tab.id === undefined || tab.pinned) return;
 
+  const settings = await loadSettings();
+
   const pr = parsePrUrl(tab.url);
   if (!pr) {
-    await ungroupIfManaged(tab);
+    await ungroupIfOurs(tab, settings);
     return;
   }
 
-  const settings = await loadSettings();
   if (!settings.token) {
     console.debug('No GitHub token configured; skipping', tab.url);
     return;
@@ -85,7 +90,6 @@ async function handleTab(tab) {
 
   try {
     await findOrCreateGroup(fresh, settings[kind]);
-    managedTabs.set(fresh.id, kind);
   } catch (e) {
     console.warn('Could not group tab', tab.url, e);
   }
@@ -101,10 +105,6 @@ async function sweepAllTabs() {
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
   if (!changeInfo.url) return;
   handleTab(tab);
-});
-
-chrome.tabs.onRemoved.addListener((tabId) => {
-  managedTabs.delete(tabId);
 });
 
 chrome.runtime.onInstalled.addListener(() => {
