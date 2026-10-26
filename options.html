@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GitHub PR Assignee Tab Groups</title>
+  <style>
+    body { font: 14px system-ui, sans-serif; max-width: 560px; margin: 2rem auto; padding: 0 1rem; }
+    fieldset { border: 1px solid #ccc; border-radius: 6px; margin-bottom: 1rem; }
+    label { display: block; margin: .5rem 0 .25rem; }
+    input[type=text], input[type=password], select { width: 100%; box-sizing: border-box; padding: .4rem; }
+    .row { display: flex; gap: 1rem; }
+    .row > div { flex: 1; }
+    button { padding: .5rem 1rem; margin-right: .5rem; }
+    #status { margin-top: 1rem; white-space: pre-wrap; }
+    .ok { color: #1a7f37; } .err { color: #cf222e; }
+    small { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>GitHub PR Assignee Tab Groups</h1>
+
+  <fieldset>
+    <legend>GitHub</legend>
+    <label for="token">Personal access token</label>
+    <input id="token" type="password" autocomplete="off" placeholder="ghp_... or github_pat_...">
+    <small>Needs read access to pull requests (classic: <code>repo</code>; fine-grained: Pull requests: Read). Stored only in this browser profile.</small>
+  </fieldset>
+
+  <fieldset>
+    <legend>Assigned to me</legend>
+    <div class="row">
+      <div><label for="mine-title">Group title</label><input id="mine-title" type="text"></div>
+      <div><label for="mine-color">Color</label><select id="mine-color"></select></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Not assigned to me</legend>
+    <div class="row">
+      <div><label for="others-title">Group title</label><input id="others-title" type="text"></div>
+      <div><label for="others-color">Color</label><select id="others-color"></select></div>
+    </div>
+  </fieldset>
+
+  <button id="save">Save</button>
+  <button id="test">Test token</button>
+  <button id="sweep">Re-scan open tabs</button>
+  <div id="status"></div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
