@@ -217,23 +217,22 @@ $('sweep').addEventListener('click', async () => {
 $('add-rule').addEventListener('click', () => addRule());
 
 $('export-rules').addEventListener('click', () => {
-  rulesJson.hidden = false;
   rulesJson.value = JSON.stringify(readRules(), null, 2);
   rulesJson.focus();
   rulesJson.select();
+  setStatus('Current list exported to the JSON box.', 'ok');
 });
 
 $('import-rules').addEventListener('click', () => {
-  if (rulesJson.hidden) {
-    rulesJson.hidden = false;
-    rulesJson.value = '';
+  const text = rulesJson.value.trim();
+  if (!text) {
+    setStatus('Paste a JSON array of {pattern, title, color} into the box first.', 'err');
     rulesJson.focus();
-    setStatus('Paste a JSON array of {pattern, title, color} and click Import JSON again.');
     return;
   }
   let parsed;
   try {
-    parsed = JSON.parse(rulesJson.value);
+    parsed = JSON.parse(text);
   } catch (e) {
     setStatus(`Invalid JSON: ${e.message}`, 'err');
     return;
@@ -243,9 +242,13 @@ $('import-rules').addEventListener('click', () => {
     return;
   }
   const rules = normalizeSettings({ rules: parsed }).rules;
+  const dropped = parsed.length - rules.length;
   writeRules(rules);
-  rulesJson.hidden = true;
-  setStatus(`Imported ${rules.length} rule(s). Click Save to apply.`, 'ok');
+  rulesBody.scrollIntoView({ block: 'nearest' });
+  setStatus(
+    `Loaded ${rules.length} rule(s) into the list${dropped ? ` (${dropped} skipped: missing pattern or title)` : ''}. Click Save to apply.`,
+    'ok',
+  );
 });
 
 for (const kind of ASSIGNEE_KINDS) {

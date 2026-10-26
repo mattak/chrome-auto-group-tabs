@@ -83,10 +83,17 @@
     </table>
     <div style="margin-top:.5rem">
       <button id="add-rule" type="button">Add rule</button>
-      <button id="export-rules" type="button">Export JSON</button>
-      <button id="import-rules" type="button">Import JSON</button>
     </div>
-    <textarea id="rules-json" placeholder='[{"pattern":"github.com","title":"gh-work","color":"grey"}]' hidden></textarea>
+  </fieldset>
+
+  <fieldset>
+    <legend>Rules as JSON</legend>
+    <textarea id="rules-json" placeholder='[{"pattern":"github.com","title":"gh-work","color":"grey"}]'></textarea>
+    <div style="margin-top:.5rem">
+      <button id="import-rules" type="button">Load JSON into the list above</button>
+      <button id="export-rules" type="button">Fill with current list</button>
+    </div>
+    <small>Loading replaces the list. Click <b>Save</b> afterwards to apply.</small>
   </fieldset>
 
   <button id="save">Save</button>
