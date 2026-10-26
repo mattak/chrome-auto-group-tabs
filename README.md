@@ -104,3 +104,7 @@ test.
 - Groups are per window. Opening a PR in another window creates a second group
   there.
 - Only `assignees` is consulted. Requested reviewers count as "others".
+
+## License
+
+MIT
