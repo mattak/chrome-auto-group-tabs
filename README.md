@@ -81,3 +81,15 @@ The pure logic (URL parsing, assignee check, settings normalisation) lives in
 - Groups are per window. Opening a PR in another window creates a second
   `pr-mine` or `pr-others` group there.
 - Only `assignees` is consulted. Requested reviewers are treated as "others".
+
+## Checking a token from the command line
+
+`tools/check-token.mjs` performs the same two requests the extension makes:
+
+```
+GITHUB_TOKEN=github_pat_... node tools/check-token.mjs octo-org/hello-world/pull/1957
+```
+
+It prints the login the token resolves to and, for each PR given, whether it
+would land in `mine` or `others`. A 404 on a repository you can open in the
+browser means the token cannot see that repository.
