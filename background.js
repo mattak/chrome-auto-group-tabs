@@ -53,20 +53,22 @@ async function ungroupIfOurs(tab, settings) {
   }
 }
 
+// Returns a short human-readable outcome so the options page can show it.
 async function handleTab(tab) {
-  if (!tab || tab.id === undefined || tab.pinned) return;
+  if (!tab || tab.id === undefined) return 'skipped: no tab';
+  if (tab.pinned) return 'skipped: pinned';
 
   const settings = await loadSettings();
 
   const pr = parsePrUrl(tab.url);
   if (!pr) {
     await ungroupIfOurs(tab, settings);
-    return;
+    return 'skipped: not a PR url';
   }
 
   if (!settings.token) {
     console.debug('No GitHub token configured; skipping', tab.url);
-    return;
+    return 'error: no token configured';
   }
 
   let kind;
@@ -76,7 +78,7 @@ async function handleTab(tab) {
     kind = classifyPr(data, login);
   } catch (e) {
     console.warn('Could not classify PR', tab.url, e);
-    return;
+    return `error: ${e.message}`;
   }
 
   // Re-read the tab: the user may have navigated again while we waited.
@@ -84,22 +86,27 @@ async function handleTab(tab) {
   try {
     fresh = await chrome.tabs.get(tab.id);
   } catch {
-    return;
+    return 'skipped: tab closed';
   }
-  if (fresh.url !== tab.url) return;
+  if (fresh.url !== tab.url) return 'skipped: tab navigated away';
 
   try {
     await findOrCreateGroup(fresh, settings[kind]);
+    return `grouped: ${settings[kind].title}`;
   } catch (e) {
     console.warn('Could not group tab', tab.url, e);
+    return `error: ${e.message}`;
   }
 }
 
 async function sweepAllTabs() {
   const tabs = await chrome.tabs.query({ url: 'https://github.com/*/*/pull/*' });
+  const results = [];
   for (const tab of tabs) {
-    await handleTab(tab);
+    const outcome = await handleTab(tab);
+    results.push({ url: tab.url, outcome });
   }
+  return results;
 }
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
@@ -124,7 +131,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // Used by the options page "Re-scan open tabs" button.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === 'sweep') {
-    sweepAllTabs().then(() => sendResponse({ ok: true }));
+    sweepAllTabs()
+      .then((results) => sendResponse({ ok: true, results }))
+      .catch((e) => sendResponse({ ok: false, error: e.message }));
     return true;
   }
   return false;

@@ -63,8 +63,24 @@ $('test').addEventListener('click', async () => {
 
 $('sweep').addEventListener('click', async () => {
   setStatus('Scanning...');
-  await chrome.runtime.sendMessage({ type: 'sweep' });
-  setStatus('Done.', 'ok');
+  let res;
+  try {
+    res = await chrome.runtime.sendMessage({ type: 'sweep' });
+  } catch (e) {
+    setStatus(`Failed to reach service worker: ${e.message}`, 'err');
+    return;
+  }
+  if (!res || !res.ok) {
+    setStatus(`Scan failed: ${res && res.error ? res.error : 'no response'}`, 'err');
+    return;
+  }
+  if (res.results.length === 0) {
+    setStatus('No open PR tabs found (looked for https://github.com/*/*/pull/*).', 'err');
+    return;
+  }
+  const lines = res.results.map((r) => `${r.outcome}\n    ${r.url}`);
+  const hasError = res.results.some((r) => r.outcome.startsWith('error'));
+  setStatus(`${res.results.length} PR tab(s):\n${lines.join('\n')}`, hasError ? 'err' : 'ok');
 });
 
 fillColors($('mine-color'));

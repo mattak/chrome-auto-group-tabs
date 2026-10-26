@@ -13,7 +13,14 @@ function headers(token) {
 async function request(token, path) {
   const res = await fetch(`${API}${path}`, { headers: headers(token) });
   if (!res.ok) {
-    const err = new Error(`GitHub API ${res.status} for ${path}`);
+    let detail = '';
+    try {
+      const body = await res.json();
+      if (body && body.message) detail = `: ${body.message}`;
+    } catch {
+      // ignore non-JSON error bodies
+    }
+    const err = new Error(`GitHub API ${res.status} for ${path}${detail}`);
     err.status = res.status;
     throw err;
   }
